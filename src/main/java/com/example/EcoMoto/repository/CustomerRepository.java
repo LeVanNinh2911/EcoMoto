@@ -9,8 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
-
-    // Tìm khách hàng theo email
     Optional<Customer> findByEmail(String email);
 
     // Tìm khách hàng theo số điện thoại
@@ -21,4 +19,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     // Kiểm tra khách hàng có tồn tại theo số điện thoại
     boolean existsByPhone(String phone);
+
+    <T> Optional<T> findByUserId(Long userId);
 }
