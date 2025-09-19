@@ -4,14 +4,15 @@ import com.example.EcoMoto.dto.order.*;
 import com.example.EcoMoto.entity.*;
 import com.example.EcoMoto.repository.*;
 import com.example.EcoMoto.service.service.OrderService;
+import com.example.EcoMoto.util.VNPayUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,15 +20,26 @@ import java.util.stream.Collectors;
 public class OrderServiceImpl implements OrderService {
 
     @Autowired
-    private  OrderRepository orderRepository;
+    private OrderRepository orderRepository;
     @Autowired
-    private  CustomerRepository customerRepository;
+    private CustomerRepository customerRepository;
     @Autowired
-    private  ProductRepository productRepository;
+    private ProductRepository productRepository;
+
+    @Value("${vnpay.tmn-code}")
+    private String vnpTmnCode;
+
+    @Value("${vnpay.hash-secret}")
+    private String vnpHashSecret;
+
+    @Value("${vnpay.return-url}")
+    private String vnpReturnUrl;
+
+    @Value("${vnpay.pay-url}")
+    private String vnpPayUrl;
 
     @Override
     public OrderResponseDto placeOrder(Long userId, OrderRequestDto request) {
-
         // Lấy customer từ user (hoặc tạo mới nếu chưa có)
         Optional<Customer> optionalCustomer = customerRepository.findByUserId(userId);
 
@@ -42,8 +54,6 @@ public class OrderServiceImpl implements OrderService {
             customer.setAddress(request.getAddress());
         }
 
-
-
         // Tính tổng tiền
         BigDecimal total = BigDecimal.ZERO;
         for (OrderItemDto item : request.getItems()) {
@@ -52,10 +62,9 @@ public class OrderServiceImpl implements OrderService {
             total = total.add(product.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
         }
 
-        // Tính tiền đặt cọc (15%)
         BigDecimal deposit = total.multiply(BigDecimal.valueOf(0.15));
 
-        // Tạo đơn hàng
+        // Tạo order
         Order order = new Order();
         order.setCustomer(customer);
         order.setOrderDate(LocalDateTime.now());
@@ -66,14 +75,11 @@ public class OrderServiceImpl implements OrderService {
         order.setPaymentStatus("UNPAID");
         order.setAddress(request.getAddress());
 
-
-        // Thêm chi tiết đơn hàng
-        // Thêm chi tiết đơn hàng
+        // Thêm chi tiết order
         List<OrderDetail> details = request.getItems().stream()
                 .map(item -> {
                     Product product = productRepository.findById(item.getProductId())
                             .orElseThrow(() -> new RuntimeException("Product not found"));
-
                     OrderDetail detail = new OrderDetail();
                     detail.setOrder(order);
                     detail.setProduct(product);
@@ -82,34 +88,36 @@ public class OrderServiceImpl implements OrderService {
                     return detail;
                 })
                 .collect(Collectors.toList());
-
         order.setOrderDetails(details);
 
         orderRepository.save(order);
 
-        // Giả lập tạo link thanh toán VNPay
+        // Tích hợp VNPay
         String paymentUrl = null;
         if ("VNPAY".equalsIgnoreCase(request.getPaymentMethod())) {
-            paymentUrl = "https://sandbox.vnpay.vn/payment?orderId=" + order.getId()
-                    + "&amount=" + deposit;
+            paymentUrl = VNPayUtil.createPaymentUrl(
+                    order.getId().toString(),
+                    deposit.longValue(),
+                    vnpTmnCode,
+                    vnpHashSecret,
+                    vnpReturnUrl,
+                    vnpPayUrl
+            );
         }
 
-        // Chuẩn bị response
-        OrderResponseDto response = new OrderResponseDto();
-        response.setOrderId(order.getId());
-        response.setTotalAmount(total);
-        response.setDepositAmount(deposit);
-        response.setStatus(order.getStatus());
-        response.setPaymentUrl(paymentUrl);
-        response.setItems(request.getItems());
-
-        return response;
-
+        return new OrderResponseDto(
+                order.getId(),
+                total,
+                deposit,
+                order.getStatus(),
+                paymentUrl,
+                request.getItems()
+        );
     }
 
     @Override
     public OrderResponseDto placeGuestOrder(GuestOrderRequestDto request) {
-        // 1. Tạo customer mới (không gắn user)
+        // Tạo customer mới
         Customer customer = new Customer();
         customer.setName(request.getName());
         customer.setEmail(request.getEmail());
@@ -117,7 +125,7 @@ public class OrderServiceImpl implements OrderService {
         customer.setAddress(request.getAddress());
         customerRepository.save(customer);
 
-        // 2. Tính toán tiền
+        // Tính toán tiền
         BigDecimal total = BigDecimal.ZERO;
         for (OrderItemDto item : request.getItems()) {
             Product product = productRepository.findById(item.getProductId())
@@ -126,7 +134,7 @@ public class OrderServiceImpl implements OrderService {
         }
         BigDecimal deposit = total.multiply(BigDecimal.valueOf(0.15));
 
-        // 3. Tạo order
+        // Tạo order
         Order order = new Order();
         order.setCustomer(customer);
         order.setOrderDate(LocalDateTime.now());
@@ -137,7 +145,7 @@ public class OrderServiceImpl implements OrderService {
         order.setPaymentStatus("UNPAID");
         order.setAddress(request.getAddress());
 
-        // 4. Thêm chi tiết order
+        // Thêm chi tiết
         List<OrderDetail> details = request.getItems().stream()
                 .map(item -> {
                     Product product = productRepository.findById(item.getProductId())
@@ -154,16 +162,26 @@ public class OrderServiceImpl implements OrderService {
 
         orderRepository.save(order);
 
-        // 5. Trả về kết quả
+        // Tích hợp VNPay
+        String paymentUrl = null;
+        if ("VNPAY".equalsIgnoreCase(request.getPaymentMethod())) {
+            paymentUrl = VNPayUtil.createPaymentUrl(
+                    order.getId().toString(),
+                    deposit.longValue(),
+                    vnpTmnCode,
+                    vnpHashSecret,
+                    vnpReturnUrl,
+                    vnpPayUrl
+            );
+        }
+
         return new OrderResponseDto(
                 order.getId(),
                 total,
                 deposit,
                 order.getStatus(),
-                null, // paymentUrl có thể tích hợp sau
+                paymentUrl,
                 request.getItems()
         );
     }
-
 }
-
