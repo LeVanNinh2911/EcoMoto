@@ -33,40 +33,40 @@ public class AuthService {
     private JwtUtils jwtUtils;
 
     public String register(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username đã tồn tại");
-        }
+        // 2️⃣ Kiểm tra trùng email
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email đã tồn tại");
+            throw new IllegalArgumentException("Email đã tồn tại");
         }
 
+        // 3️⃣ Lấy role USER
         Role userRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new RuntimeException("Role USER không tồn tại"));
+                .orElseThrow(() -> new IllegalStateException("Không tìm thấy quyền USER trong hệ thống"));
 
-        // Tạo user
+        // 4️⃣ Tạo User
         User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
+        user.setUsername(request.getName().trim());
+        user.setEmail(request.getEmail().trim());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(userRole);
         userRepository.save(user);
 
-        // Tạo customer gắn với user
+        // 5️⃣ Tạo Customer mặc định (gắn với user)
         Customer customer = new Customer();
         customer.setUser(user);
-        customer.setName(request.getUsername());
-        customer.setPhone("");
-        customer.setAddress("");
-        customer.setEmail(request.getEmail());
+        customer.setName(user.getUsername());          // để user điền sau
+        customer.setPhone(null);
+        customer.setAddress(null);
+        customer.setEmail(user.getEmail());
         customerRepository.save(customer);
-        return "Đăng ký thành công ";
+
+        return "Đăng ký thành công!";
     }
+
 
     public JwtResponse login(LoginRequest request) {
         // Cho phép login bằng username hoặc email
-        User user = userRepository.findByUsername(request.getUsernameOrEmail())
-                .orElseGet(() -> userRepository.findByEmail(request.getUsernameOrEmail())
-                        .orElseThrow(() -> new RuntimeException("Tài khoản không hợp lệ")));
+        User user = userRepository.findByEmail(request.getEmail())
+                        .orElseThrow(() -> new RuntimeException("Tài khoản không hợp lệ"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Mật khẩu không đúng");

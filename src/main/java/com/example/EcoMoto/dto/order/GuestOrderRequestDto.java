@@ -1,5 +1,7 @@
 package com.example.EcoMoto.dto.order;
 
+import com.example.EcoMoto.entity.enums.PaymentMethod;
+
 import java.util.List;
 
 public class GuestOrderRequestDto {
@@ -7,19 +9,21 @@ public class GuestOrderRequestDto {
     private String email;
     private String phone;
     private String address;
-    private String paymentMethod;
+    private PaymentMethod paymentMethod;
     private List<OrderItemDto> items;
+    private Double installmentDownPaymentPercent; // phần trăm trả trước (VD: 0.2 = 20%)
 
     public GuestOrderRequestDto() {
     }
 
-    public GuestOrderRequestDto(String name, String email, String phone, String address, String paymentMethod, List<OrderItemDto> items) {
+    public GuestOrderRequestDto(String name, String email, String phone, String address, PaymentMethod paymentMethod, List<OrderItemDto> items, Double installmentDownPaymentPercent) {
         this.name = name;
         this.email = email;
         this.phone = phone;
         this.address = address;
         this.paymentMethod = paymentMethod;
         this.items = items;
+        this.installmentDownPaymentPercent = installmentDownPaymentPercent;
     }
 
     public String getName() {
@@ -54,11 +58,11 @@ public class GuestOrderRequestDto {
         this.address = address;
     }
 
-    public String getPaymentMethod() {
+    public PaymentMethod getPaymentMethod() {
         return paymentMethod;
     }
 
-    public void setPaymentMethod(String paymentMethod) {
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
         this.paymentMethod = paymentMethod;
     }
 
@@ -68,5 +72,13 @@ public class GuestOrderRequestDto {
 
     public void setItems(List<OrderItemDto> items) {
         this.items = items;
+    }
+
+    public Double getInstallmentDownPaymentPercent() {
+        return installmentDownPaymentPercent;
+    }
+
+    public void setInstallmentDownPaymentPercent(Double installmentDownPaymentPercent) {
+        this.installmentDownPaymentPercent = installmentDownPaymentPercent;
     }
 }

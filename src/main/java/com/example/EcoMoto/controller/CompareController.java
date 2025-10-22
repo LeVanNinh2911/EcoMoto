@@ -1,7 +1,9 @@
 package com.example.EcoMoto.controller;
 
+import com.example.EcoMoto.dto.compare.CompareRequest;
 import com.example.EcoMoto.service.service.CompareService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,17 +16,15 @@ import java.util.Map;
 @RequestMapping("/api/compare")
 public class CompareController {
 
-    private final CompareService compareService;
-    public CompareController(CompareService compareService) {
-        this.compareService = compareService;
-    }
+    @Autowired
+    private CompareService compareService;
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> compareProducts(
-            @RequestBody List<Long> productIds,
+            @RequestBody CompareRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        Map<String, Object> result = compareService.compareProducts(productIds, userDetails);
+        Map<String, Object> result = compareService.compareProducts(request, userDetails);
         return ResponseEntity.ok(result);
     }
     @GetMapping("/history")

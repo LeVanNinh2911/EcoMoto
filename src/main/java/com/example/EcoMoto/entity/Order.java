@@ -1,5 +1,7 @@
 package com.example.EcoMoto.entity;
 
+import com.example.EcoMoto.entity.enums.PaymentMethod;
+import com.example.EcoMoto.entity.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -37,12 +39,11 @@ public class Order {
     private String status; // PENDING, PAID, SHIPPED, COMPLETED
 
     // Phương thức thanh toán
-    @Column(nullable = false, length = 50)
-    private String paymentMethod; // VNPAY, COD
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
 
-    // Trạng thái thanh toán
-    @Column(nullable = false, length = 20)
-    private String paymentStatus; // UNPAID, PAID
+    @Enumerated(EnumType.STRING)
+    private PaymentStatus paymentStatus;
 
     @Column(length = 255)
     private String address;
@@ -54,7 +55,7 @@ public class Order {
     public Order() {
     }
 
-    public Order(Long id, Customer customer, LocalDateTime orderDate, BigDecimal totalAmount, BigDecimal depositAmount, String status, String paymentMethod, String paymentStatus, String address, List<OrderDetail> orderDetails) {
+    public Order(Long id, Customer customer, LocalDateTime orderDate, BigDecimal totalAmount, BigDecimal depositAmount, String status, PaymentMethod paymentMethod, PaymentStatus paymentStatus, String address, List<OrderDetail> orderDetails) {
         this.id = id;
         this.customer = customer;
         this.orderDate = orderDate;
@@ -115,19 +116,19 @@ public class Order {
         this.status = status;
     }
 
-    public String getPaymentMethod() {
+    public PaymentMethod getPaymentMethod() {
         return paymentMethod;
     }
 
-    public void setPaymentMethod(String paymentMethod) {
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
         this.paymentMethod = paymentMethod;
     }
 
-    public String getPaymentStatus() {
+    public PaymentStatus getPaymentStatus() {
         return paymentStatus;
     }
 
-    public void setPaymentStatus(String paymentStatus) {
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
         this.paymentStatus = paymentStatus;
     }
 

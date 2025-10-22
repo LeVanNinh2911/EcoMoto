@@ -1,32 +1,17 @@
 package com.example.EcoMoto.dto.auth;
 
 public class RegisterRequest {
-    private String username;
     private String email;
     private String password;
     private String name;     // tên khách hàng
-    private String phone;
-    private String address;
 
     public RegisterRequest() {
     }
 
-    public RegisterRequest(String username, String email, String password,
-                           String name, String phone, String address) {
-        this.username = username;
+    public RegisterRequest(String name, String email, String password) {
         this.email = email;
         this.password = password;
         this.name = name;
-        this.phone = phone;
-        this.address = address;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public String getEmail() {
@@ -53,19 +38,4 @@ public class RegisterRequest {
         this.name = name;
     }
 
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
 }

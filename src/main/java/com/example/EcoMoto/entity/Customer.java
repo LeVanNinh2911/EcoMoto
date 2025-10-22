@@ -10,21 +10,20 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String name;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(length = 100)
     private String email;
 
-    @Column(nullable = false, unique = true, length = 20)
+    @Column(length = 20)
     private String phone;
 
     @Column(length = 255)
     private String address;
 
-    // Nếu muốn liên kết với bảng User (1 user có thể là customer)
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = true)
     private User user;
 
     public Customer() {

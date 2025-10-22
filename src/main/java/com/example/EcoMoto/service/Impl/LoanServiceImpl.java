@@ -30,11 +30,13 @@ public class LoanServiceImpl implements LoanService {
         Bank bank = bankRepository.findById(request.getBankId())
                 .orElseThrow(() -> new RuntimeException("Bank not found"));
 
-        double price = product.getPrice().doubleValue();
-        double downPayment = price * request.getDownPaymentPercent() / 100.0;
+        double price = product.getFinalPrice().doubleValue();
+
+        // LƯU Ý: request.getDownPaymentPercent() được hiểu là fraction 0..1 (ví dụ 0.3 cho 30%)
+        double downPayment = price * request.getDownPaymentPercent();
         double loanAmount = price - downPayment;
 
-        int periods = request.getLoanYears() * 12; // ⚡ chú ý tên field DTO
+        int periods = request.getLoanYears() * 12;
         double monthlyRate = bank.getInterestRate() / 100.0 / 12;
 
         double principalPerPeriod = loanAmount / periods;
@@ -54,11 +56,11 @@ public class LoanServiceImpl implements LoanService {
 
             schedules.add(new PaymentScheduleDto(
                     i,
-                    round(beginBalance),  // số dư đầu kỳ
+                    round(beginBalance),
                     round(principal),
                     round(interest),
                     round(payment),
-                    round(remaining)      // số dư cuối kỳ
+                    round(Math.max(0, remaining))
             ));
         }
 
@@ -66,6 +68,7 @@ public class LoanServiceImpl implements LoanService {
 
         return new LoanResultDto(round(totalInterest), round(totalPay), schedules);
     }
+
 
     private double round(double value) {
         return Math.round(value * 100.0) / 100.0;

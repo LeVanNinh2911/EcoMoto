@@ -1,4 +1,4 @@
-package com.example.EcoMoto;
+package com.example.EcoMoto.entity.enums;
 
 public enum ProductStatus {
     AVAILABLE,

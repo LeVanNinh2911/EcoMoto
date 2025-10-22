@@ -1,5 +1,6 @@
 package com.example.EcoMoto.dto.order;
 
+import com.example.EcoMoto.entity.enums.PaymentMethod;
 import lombok.*;
 import java.util.List;
 
@@ -9,21 +10,20 @@ public class OrderRequestDto {
     private String email;
     private String phone;
     private String address;
-
-    private String paymentMethod; // VNPAY hoặc COD
-
+    private PaymentMethod paymentMethod; // VNPAY hoặc COD
     private List<OrderItemDto> items; // danh sách sản phẩm đặt mua
-
+    private Double installmentDownPaymentPercent; // phần trăm trả trước (VD: 0.2 = 20%)
     public OrderRequestDto() {
     }
 
-    public OrderRequestDto(String name, String email, String phone, String address, String paymentMethod, List<OrderItemDto> items) {
+    public OrderRequestDto(String name, String email, String phone, String address, PaymentMethod paymentMethod, List<OrderItemDto> items, Double installmentDownPaymentPercent) {
         this.name = name;
         this.email = email;
         this.phone = phone;
         this.address = address;
         this.paymentMethod = paymentMethod;
         this.items = items;
+        this.installmentDownPaymentPercent = installmentDownPaymentPercent;
     }
 
     public String getName() {
@@ -58,11 +58,11 @@ public class OrderRequestDto {
         this.address = address;
     }
 
-    public String getPaymentMethod() {
+    public PaymentMethod getPaymentMethod() {
         return paymentMethod;
     }
 
-    public void setPaymentMethod(String paymentMethod) {
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
         this.paymentMethod = paymentMethod;
     }
 
@@ -72,5 +72,13 @@ public class OrderRequestDto {
 
     public void setItems(List<OrderItemDto> items) {
         this.items = items;
+    }
+
+    public Double getInstallmentDownPaymentPercent() {
+        return installmentDownPaymentPercent;
+    }
+
+    public void setInstallmentDownPaymentPercent(Double installmentDownPaymentPercent) {
+        this.installmentDownPaymentPercent = installmentDownPaymentPercent;
     }
 }

@@ -1,9 +1,13 @@
 package com.example.EcoMoto.entity;
 
-import com.example.EcoMoto.ProductStatus;
+import com.example.EcoMoto.entity.enums.DiscountType;
+import com.example.EcoMoto.entity.enums.ProductStatus;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -16,12 +20,14 @@ public class Product {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "brand_id")
+    @JsonIgnoreProperties("products")
     private Brand brand;
 
-    @Column(length = 50)
-    private String color;
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("product")
+    private List<ProductColor> colors;
 
     @Column(precision = 15, scale = 2)
     private BigDecimal price;
@@ -51,14 +57,64 @@ public class Product {
     @Column(nullable = false, columnDefinition = "enum('AVAILABLE','OUT_OF_STOCK','DISCONTINUED') default 'AVAILABLE'")
     private ProductStatus status = ProductStatus.AVAILABLE;
 
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    @JsonIgnoreProperties("products")
+    private Category category;
+
+    // ================= THÊM PHẦN KHUYẾN MÃI =================
+
+    @ManyToMany
+    @JoinTable(
+            name = "product_promotions",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "promotion_id")
+    )
+    @JsonIgnoreProperties("products")
+    private List<Promotion> promotions;
+
+    // ✅ Tính giá sau khuyến mãi (finalPrice)
+    @Transient
+    public BigDecimal getFinalPrice() {
+        if (promotions == null || promotions.isEmpty()) {
+            return this.price;
+        }
+
+        LocalDate now = LocalDate.now();
+        BigDecimal finalPrice = this.price;
+
+        for (Promotion promo : promotions) {
+            if (promo.isActive()
+                    && promo.getStartDate() != null
+                    && promo.getEndDate() != null
+                    && (now.isEqual(promo.getStartDate()) || now.isAfter(promo.getStartDate()))
+                    && (now.isEqual(promo.getEndDate()) || now.isBefore(promo.getEndDate()))) {
+
+                if (promo.getDiscountType() == DiscountType.PERCENT) {
+                    BigDecimal discount = price.multiply(promo.getDiscountValue().divide(BigDecimal.valueOf(100)));
+                    finalPrice = finalPrice.subtract(discount);
+                } else {
+                    finalPrice = finalPrice.subtract(promo.getDiscountValue());
+                }
+            }
+        }
+
+        return finalPrice.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : finalPrice;
+    }
+
+    // ================= CONSTRUCTORS =================
+
     public Product() {
     }
 
-    public Product(Long id, String name, Brand brand, String color, BigDecimal price, Integer rangePerCharge, Integer batteryCapacity, Integer maxSpeed, BigDecimal weight, String imageUrl, String description, Integer stockQuantity, ProductStatus status) {
+    public Product(Long id, String name, Brand brand, List<ProductColor> colors, BigDecimal price,
+                   Integer rangePerCharge, Integer batteryCapacity, Integer maxSpeed, BigDecimal weight,
+                   String imageUrl, String description, Integer stockQuantity, ProductStatus status,
+                   Category category, List<Promotion> promotions) {
         this.id = id;
         this.name = name;
         this.brand = brand;
-        this.color = color;
+        this.colors = colors;
         this.price = price;
         this.rangePerCharge = rangePerCharge;
         this.batteryCapacity = batteryCapacity;
@@ -68,7 +124,11 @@ public class Product {
         this.description = description;
         this.stockQuantity = stockQuantity;
         this.status = status;
+        this.category = category;
+        this.promotions = promotions;
     }
+
+    // ================= GETTERS / SETTERS =================
 
     public Long getId() {
         return id;
@@ -94,12 +154,12 @@ public class Product {
         this.brand = brand;
     }
 
-    public String getColor() {
-        return color;
+    public List<ProductColor> getColors() {
+        return colors;
     }
 
-    public void setColor(String color) {
-        this.color = color;
+    public void setColors(List<ProductColor> colors) {
+        this.colors = colors;
     }
 
     public BigDecimal getPrice() {
@@ -173,5 +233,20 @@ public class Product {
     public void setStatus(ProductStatus status) {
         this.status = status;
     }
-}
 
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
+    }
+
+    public List<Promotion> getPromotions() {
+        return promotions;
+    }
+
+    public void setPromotions(List<Promotion> promotions) {
+        this.promotions = promotions;
+    }
+}

@@ -1,12 +1,14 @@
 package com.example.EcoMoto.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "brand")
+@Table(name = "brands")
 public class Brand {
 
     @Id
@@ -25,8 +27,9 @@ public class Brand {
     @Column(name = "logo_url", length = 255)
     private String logoUrl;
 
-    @OneToMany(mappedBy = "brand", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Product> products = new ArrayList<>();
+    @OneToMany(mappedBy = "brand", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("brand")
+    private List<Product> products;
 
     public Brand() {
     }

@@ -29,9 +29,10 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         // Cho phép các API auth/public
-                        .requestMatchers("/auth/**", "/public/**").permitAll()
-                        // Các API còn lại phải xác thực
+                        .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/**").permitAll()
+                        // Các API còn lại phải xác thực
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                 )
                 // Stateless vì dùng JWT
