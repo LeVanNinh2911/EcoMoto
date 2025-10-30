@@ -11,19 +11,27 @@ public class OrderResponseDto {
     private String status;
     private String paymentUrl; // nếu chọn VNPAY thì trả link thanh toán giả lập
     private List<OrderItemDto> items;
+    // Thêm hai thuộc tính mới
+    private String customerName;
+    private String customerEmail;
 
     public OrderResponseDto() {
     }
 
-    public OrderResponseDto(Long orderId, BigDecimal totalAmount, BigDecimal depositAmount, String status, String paymentUrl, List<OrderItemDto> items) {
+    public OrderResponseDto(Long orderId, BigDecimal totalAmount, BigDecimal depositAmount,
+                            String status, String paymentUrl, List<OrderItemDto> items,
+                            String customerName, String customerEmail) {
         this.orderId = orderId;
         this.totalAmount = totalAmount;
         this.depositAmount = depositAmount;
         this.status = status;
         this.paymentUrl = paymentUrl;
         this.items = items;
+        this.customerName = customerName;
+        this.customerEmail = customerEmail;
     }
 
+    // Getters & Setters
     public Long getOrderId() {
         return orderId;
     }
@@ -70,5 +78,21 @@ public class OrderResponseDto {
 
     public void setItems(List<OrderItemDto> items) {
         this.items = items;
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+
+    public String getCustomerEmail() {
+        return customerEmail;
+    }
+
+    public void setCustomerEmail(String customerEmail) {
+        this.customerEmail = customerEmail;
     }
 }

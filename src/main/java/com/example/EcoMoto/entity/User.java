@@ -1,8 +1,9 @@
 package com.example.EcoMoto.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "users") // tránh trùng với keyword SQL
 public class User {

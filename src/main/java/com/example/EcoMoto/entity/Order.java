@@ -2,15 +2,17 @@ package com.example.EcoMoto.entity;
 
 import com.example.EcoMoto.entity.enums.PaymentMethod;
 import com.example.EcoMoto.entity.enums.PaymentStatus;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "orders")
-
 public class Order {
 
     @Id
@@ -18,27 +20,23 @@ public class Order {
     private Long id;
 
     // Khách hàng
-    @ManyToOne
+    @JsonBackReference // tránh vòng lặp JSON
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
-    // Ngày đặt
     @Column(nullable = false)
     private LocalDateTime orderDate;
 
-    // Tổng tiền
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount;
 
-    // Tiền đặt cọc (15%)
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal depositAmount;
 
-    // Trạng thái đơn
     @Column(nullable = false, length = 20)
-    private String status; // PENDING, PAID, SHIPPED, COMPLETED
+    private String status;
 
-    // Phương thức thanh toán
     @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod;
 
@@ -48,14 +46,14 @@ public class Order {
     @Column(length = 255)
     private String address;
 
-    // Liên kết chi tiết đơn hàng
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderDetail> orderDetails;
 
-    public Order() {
-    }
+    public Order() {}
 
-    public Order(Long id, Customer customer, LocalDateTime orderDate, BigDecimal totalAmount, BigDecimal depositAmount, String status, PaymentMethod paymentMethod, PaymentStatus paymentStatus, String address, List<OrderDetail> orderDetails) {
+    public Order(Long id, Customer customer, LocalDateTime orderDate, BigDecimal totalAmount,
+                 BigDecimal depositAmount, String status, PaymentMethod paymentMethod,
+                 PaymentStatus paymentStatus, String address, List<OrderDetail> orderDetails) {
         this.id = id;
         this.customer = customer;
         this.orderDate = orderDate;

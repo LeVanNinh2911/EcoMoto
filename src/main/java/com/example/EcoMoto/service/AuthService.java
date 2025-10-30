@@ -51,13 +51,13 @@ public class AuthService {
         userRepository.save(user);
 
         // 5️⃣ Tạo Customer mặc định (gắn với user)
-        Customer customer = new Customer();
-        customer.setUser(user);
-        customer.setName(user.getUsername());          // để user điền sau
-        customer.setPhone(null);
-        customer.setAddress(null);
-        customer.setEmail(user.getEmail());
-        customerRepository.save(customer);
+//        Customer customer = new Customer();
+//        customer.setUser(user);
+//        customer.setName(user.getUsername());          // để user điền sau
+//        customer.setPhone(null);
+//        customer.setAddress(null);
+//        customer.setEmail(user.getEmail());
+//        customerRepository.save(customer);
 
         return "Đăng ký thành công!";
     }
@@ -72,7 +72,7 @@ public class AuthService {
             throw new RuntimeException("Mật khẩu không đúng");
         }
 
-        String token = jwtUtils.generateToken(user.getUsername(),user.getRole().getName());
+        String token = jwtUtils.generateToken(user.getEmail(),user.getRole().getName());
 
         return new JwtResponse(
                 token,

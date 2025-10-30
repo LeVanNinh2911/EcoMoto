@@ -16,9 +16,9 @@ public class JwtUtils {
     private int jwtExpirationMs;
 
     // Tạo token với username và role
-    public String generateToken(String username, String role) {
+    public String generateToken(String email, String role) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(email)
                 .claim("role", role) // thêm role vào payload
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
@@ -26,8 +26,8 @@ public class JwtUtils {
                 .compact();
     }
 
-    // Lấy username từ token
-    public String getUsernameFromToken(String token) {
+    // Lấy email từ token
+    public String getEmailFromToken(String token) {
         return Jwts.parser()
                 .setSigningKey(jwtSecret)
                 .parseClaimsJws(token)

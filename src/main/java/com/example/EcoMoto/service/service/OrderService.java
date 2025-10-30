@@ -7,6 +7,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface OrderService {
-    OrderResponseDto placeOrder(Long userId, OrderRequestDto request);
+    OrderResponseDto placeOrder(String token, OrderRequestDto request);
     OrderResponseDto placeGuestOrder(GuestOrderRequestDto request);
 }

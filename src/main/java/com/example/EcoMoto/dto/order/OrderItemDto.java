@@ -4,13 +4,15 @@ import lombok.*;
 
 public class OrderItemDto {
     private Long productId;
+    private Long colorId ;
     private Integer quantity;
 
     public OrderItemDto() {
     }
 
-    public OrderItemDto(Long productId, Integer quantity) {
+    public OrderItemDto(Long productId, Long colorId, Integer quantity) {
         this.productId = productId;
+        this.colorId = colorId;
         this.quantity = quantity;
     }
 
@@ -20,6 +22,14 @@ public class OrderItemDto {
 
     public void setProductId(Long productId) {
         this.productId = productId;
+    }
+
+    public Long getColorId() {
+        return colorId;
+    }
+
+    public void setColorId(Long colorId) {
+        this.colorId = colorId;
     }
 
     public Integer getQuantity() {

@@ -1,8 +1,8 @@
 package com.example.EcoMoto.controller;
 
-import com.example.EcoMoto.entity.enums.ExchangeStatus;
 import com.example.EcoMoto.dto.exchange.ExchangeRequestDto;
-import com.example.EcoMoto.entity.ExchangeRequest;
+import com.example.EcoMoto.dto.exchange.ExchangeResponseDto;
+import com.example.EcoMoto.entity.enums.ExchangeStatus;
 import com.example.EcoMoto.service.service.ExchangeRequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,48 +17,49 @@ public class ExchangeRequestController {
     @Autowired
     private ExchangeRequestService exchangeRequestService;
 
-    // 1. Tạo yêu cầu đổi xe
-    @PostMapping
-    public ResponseEntity<ExchangeRequest> createExchangeRequest(
+    // ================== Tạo yêu cầu đổi xe ==================
+    @PostMapping("/create")
+    public ResponseEntity<ExchangeResponseDto> createExchangeRequest(
             @RequestHeader("Authorization") String token,
-            @RequestBody ExchangeRequestDto dto) {
-
-        // Xóa "Bearer " nếu token đầy đủ từ header
+            @RequestBody ExchangeRequestDto dto
+    ) {
+        // Loại bỏ prefix "Bearer " nếu có
         if (token.startsWith("Bearer ")) {
             token = token.substring(7);
         }
 
-        ExchangeRequest request = exchangeRequestService.createExchangeRequest(token, dto);
-        return ResponseEntity.ok(request);
+        ExchangeResponseDto response = exchangeRequestService.createExchangeRequest(token, dto);
+        return ResponseEntity.ok(response);
     }
 
-    // 2. Lấy danh sách yêu cầu của user hiện tại
+    // ================== Lấy danh sách yêu cầu của user ==================
     @GetMapping("/my-requests")
-    public ResponseEntity<List<ExchangeRequest>> getMyRequests(
-            @RequestHeader("Authorization") String token) {
-
+    public ResponseEntity<List<ExchangeResponseDto>> getMyRequests(
+            @RequestHeader("Authorization") String token
+    ) {
         if (token.startsWith("Bearer ")) {
             token = token.substring(7);
         }
 
-        List<ExchangeRequest> requests = exchangeRequestService.getMyRequests(token);
+        List<ExchangeResponseDto> requests = exchangeRequestService.getMyRequests(token);
         return ResponseEntity.ok(requests);
     }
 
-    // 3. Lấy tất cả yêu cầu (dành cho admin)
+    // ================== Lấy tất cả yêu cầu (cho admin) ==================
     @GetMapping("/all")
-    public ResponseEntity<List<ExchangeRequest>> getAllRequests() {
-        List<ExchangeRequest> requests = exchangeRequestService.getAllRequests();
+    public ResponseEntity<List<ExchangeResponseDto>> getAllRequests() {
+        List<ExchangeResponseDto> requests = exchangeRequestService.getAllRequests();
         return ResponseEntity.ok(requests);
     }
 
-    // 4. Cập nhật trạng thái yêu cầu (dành cho admin)
+    // ================== Cập nhật trạng thái yêu cầu ==================
     @PutMapping("/{id}/status")
-    public ResponseEntity<ExchangeRequest> updateStatus(
+    public ResponseEntity<ExchangeResponseDto> updateStatus(
             @PathVariable Long id,
-            @RequestParam ExchangeStatus status) {
-
-        ExchangeRequest updatedRequest = exchangeRequestService.updateStatus(id, status);
-        return ResponseEntity.ok(updatedRequest);
+            @RequestParam ExchangeStatus status
+    ) {
+        ExchangeResponseDto updated = exchangeRequestService.updateStatus(id, status);
+        return ResponseEntity.ok(updated);
     }
 }
+

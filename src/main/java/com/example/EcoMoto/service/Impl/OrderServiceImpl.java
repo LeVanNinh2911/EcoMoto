@@ -3,9 +3,9 @@ package com.example.EcoMoto.service.Impl;
 import com.example.EcoMoto.dto.order.*;
 import com.example.EcoMoto.entity.*;
 import com.example.EcoMoto.entity.enums.PaymentStatus;
-import com.example.EcoMoto.entity.enums.PaymentMethod;
 import com.example.EcoMoto.repository.*;
 import com.example.EcoMoto.service.service.OrderService;
+import com.example.EcoMoto.util.JwtUtils;
 import com.example.EcoMoto.util.VNPayUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,12 +22,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
-    @Autowired
-    private OrderRepository orderRepository;
-    @Autowired
-    private CustomerRepository customerRepository;
-    @Autowired
-    private ProductRepository productRepository;
+    @Autowired private OrderRepository orderRepository;
+    @Autowired private CustomerRepository customerRepository;
+    @Autowired private ProductRepository productRepository;
+    @Autowired private ProductColorRepository productColorRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private JwtUtils jwtUtils;
 
     @Value("${vnpay.tmn-code}")
     private String vnpTmnCode;
@@ -45,30 +45,53 @@ public class OrderServiceImpl implements OrderService {
     // 🧾 ĐẶT HÀNG CHO NGƯỜI DÙNG ĐÃ ĐĂNG NHẬP
     // ==========================================================
     @Override
-    public OrderResponseDto placeOrder(Long userId, OrderRequestDto request) {
-        // 1️⃣ Lấy hoặc tạo Customer
-        Customer customer = (Customer) customerRepository.findByUserId(userId)
-                .orElseGet(() -> {
-                    Customer c = new Customer();
-                    c.setName(request.getName());
-                    c.setEmail(request.getEmail());
-                    c.setPhone(request.getPhone());
-                    c.setAddress(request.getAddress());
-                    return customerRepository.save(c);
-                });
+    public OrderResponseDto placeOrder(String token, OrderRequestDto request) {
+        String email = jwtUtils.getEmailFromToken(token);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
 
-        // 2️⃣ Tính tổng tiền
-        BigDecimal total = request.getItems().stream()
-                .map(item -> {
-                    Product product = productRepository.findById(item.getProductId())
-                            .orElseThrow(() -> new RuntimeException("Product not found"));
-                    return product.getFinalPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // ✅ Tính tổng tiền
+        BigDecimal total = BigDecimal.ZERO;
+
+        List<OrderDetail> details = new ArrayList<>();
+
+        for (OrderItemDto item : request.getItems()) {
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+            ProductColor color = null;
+            if (item.getColorId() != null) {
+                color = productColorRepository.findById(item.getColorId())
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy màu sản phẩm"));
+
+                // ✅ Kiểm tra màu có thuộc sản phẩm không
+                if (!color.getProduct().getId().equals(product.getId())) {
+                    throw new RuntimeException("Màu " + color.getName() + " không thuộc sản phẩm " + product.getName());
+                }
+            }
+
+            BigDecimal itemTotal = product.getFinalPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+            total = total.add(itemTotal);
+
+            OrderDetail detail = new OrderDetail();
+            detail.setOrder(null); // tạm thời null, sẽ set sau
+            detail.setProduct(product);
+            detail.setColor(color);
+            detail.setQuantity(item.getQuantity());
+            detail.setPrice(product.getFinalPrice());
+            details.add(detail);
+        }
 
         BigDecimal deposit = total.multiply(BigDecimal.valueOf(0.15));
 
-        // 3️⃣ Tạo đơn hàng
+        Customer customer = new Customer();
+        customer.setName(request.getName());
+        customer.setEmail(request.getEmail());
+        customer.setPhone(request.getPhone());
+        customer.setAddress(request.getAddress());
+        customer.setUser(user);
+        customerRepository.save(customer);
+
         Order order = new Order();
         order.setCustomer(customer);
         order.setOrderDate(LocalDateTime.now());
@@ -78,44 +101,64 @@ public class OrderServiceImpl implements OrderService {
         order.setPaymentMethod(request.getPaymentMethod());
         order.setStatus("PENDING");
 
-        // 4️⃣ Xử lý thanh toán
         String paymentUrl = handleInstallmentPayment(order, deposit, request.getInstallmentDownPaymentPercent());
 
+        // ✅ Gán lại order cho từng detail
+        for (OrderDetail d : details) {
+            d.setOrder(order);
+        }
 
-        // 5️⃣ Chi tiết đơn hàng
-        List<OrderDetail> details = request.getItems().stream()
-                .map(item -> {
-                    Product product = productRepository.findById(item.getProductId())
-                            .orElseThrow(() -> new RuntimeException("Product not found"));
-                    OrderDetail detail = new OrderDetail();
-                    detail.setOrder(order);
-                    detail.setProduct(product);
-                    detail.setQuantity(item.getQuantity());
-                    detail.setPrice(product.getPrice());
-                    return detail;
-                })
-                .collect(Collectors.toList());
         order.setOrderDetails(details);
-
         orderRepository.save(order);
 
-        // 6️⃣ Kết quả trả về
         return new OrderResponseDto(
                 order.getId(),
                 total,
                 deposit,
                 order.getStatus(),
                 paymentUrl,
-                request.getItems()
+                request.getItems(),
+                customer.getName(),
+                customer.getEmail()
         );
     }
 
     // ==========================================================
-    // 👤 ĐẶT HÀNG KHÁCH VÃNG LAI (KHÔNG CẦN ĐĂNG NHẬP)
+    // 👤 ĐẶT HÀNG KHÁCH VÃNG LAI
     // ==========================================================
     @Override
     public OrderResponseDto placeGuestOrder(GuestOrderRequestDto request) {
-        // 1️⃣ Tạo khách hàng mới
+
+        BigDecimal total = BigDecimal.ZERO;
+        List<OrderDetail> details = new ArrayList<>();
+
+        for (OrderItemDto item : request.getItems()) {
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+            ProductColor color = null;
+            if (item.getColorId() != null) {
+                color = productColorRepository.findById(item.getColorId())
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy màu sản phẩm"));
+
+                if (!color.getProduct().getId().equals(product.getId())) {
+                    throw new RuntimeException("Màu " + color.getName() + " không thuộc sản phẩm " + product.getName());
+                }
+            }
+
+            BigDecimal itemTotal = product.getFinalPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+            total = total.add(itemTotal);
+
+            OrderDetail detail = new OrderDetail();
+            detail.setProduct(product);
+            detail.setColor(color);
+            detail.setQuantity(item.getQuantity());
+            detail.setPrice(product.getFinalPrice());
+            details.add(detail);
+        }
+
+        BigDecimal deposit = total.multiply(BigDecimal.valueOf(0.15));
+
         Customer customer = new Customer();
         customer.setName(request.getName());
         customer.setEmail(request.getEmail());
@@ -123,18 +166,6 @@ public class OrderServiceImpl implements OrderService {
         customer.setAddress(request.getAddress());
         customerRepository.save(customer);
 
-        // 2️⃣ Tính tổng tiền
-        BigDecimal total = request.getItems().stream()
-                .map(item -> {
-                    Product product = productRepository.findById(item.getProductId())
-                            .orElseThrow(() -> new RuntimeException("Product not found"));
-                    return product.getFinalPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal deposit = total.multiply(BigDecimal.valueOf(0.15));
-
-        // 3️⃣ Tạo đơn hàng
         Order order = new Order();
         order.setCustomer(customer);
         order.setOrderDate(LocalDateTime.now());
@@ -144,39 +175,28 @@ public class OrderServiceImpl implements OrderService {
         order.setPaymentMethod(request.getPaymentMethod());
         order.setStatus("PENDING");
 
-        // 4️⃣ Xử lý thanh toán
         String paymentUrl = handleInstallmentPayment(order, deposit, request.getInstallmentDownPaymentPercent());
 
+        for (OrderDetail d : details) {
+            d.setOrder(order);
+        }
 
-        // 5️⃣ Chi tiết đơn hàng
-        List<OrderDetail> details = request.getItems().stream()
-                .map(item -> {
-                    Product product = productRepository.findById(item.getProductId())
-                            .orElseThrow(() -> new RuntimeException("Product not found"));
-                    OrderDetail detail = new OrderDetail();
-                    detail.setOrder(order);
-                    detail.setProduct(product);
-                    detail.setQuantity(item.getQuantity());
-                    detail.setPrice(product.getPrice());
-                    return detail;
-                })
-                .collect(Collectors.toList());
         order.setOrderDetails(details);
-
         orderRepository.save(order);
 
-        // 6️⃣ Kết quả trả về
         return new OrderResponseDto(
                 order.getId(),
                 total,
                 deposit,
                 order.getStatus(),
                 paymentUrl,
-                request.getItems()
+                request.getItems(),
+                customer.getName(),
+                customer.getEmail()
         );
     }
 
-    // 💳 HÀM XỬ LÝ CÁC KIỂU THANH TOÁN
+    // 💳 HÀM XỬ LÝ THANH TOÁN
     private String handleInstallmentPayment(Order order, BigDecimal deposit, Double downPercent) {
         String paymentUrl = null;
 
@@ -201,8 +221,6 @@ public class OrderServiceImpl implements OrderService {
 
             case INSTALLMENT:
                 double percent = (downPercent != null && downPercent > 0) ? downPercent : 0.15;
-
-                // Tính tiền trả trước chính xác
                 BigDecimal downPayment = order.getTotalAmount()
                         .multiply(BigDecimal.valueOf(percent))
                         .setScale(0, RoundingMode.UP);
@@ -210,7 +228,6 @@ public class OrderServiceImpl implements OrderService {
                 order.setDepositAmount(downPayment);
                 order.setPaymentStatus(PaymentStatus.INSTALLMENT_PENDING);
 
-                // Chia 100 để VNPay hiển thị đúng
                 long vnpAmount = downPayment.divide(BigDecimal.valueOf(100)).longValue();
 
                 paymentUrl = VNPayUtil.createPaymentUrl(
@@ -227,6 +244,4 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
         return paymentUrl;
     }
-
-
 }

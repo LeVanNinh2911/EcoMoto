@@ -14,8 +14,8 @@ public class ExchangeRequest {
 
     // Liên kết với customer (người gửi yêu cầu)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     // Liên kết với chi nhánh
     @ManyToOne(fetch = FetchType.LAZY)
@@ -53,8 +53,8 @@ public class ExchangeRequest {
     // Getters & Setters
     public Long getId() { return id; }
 
-    public Customer getCustomer() { return customer; }
-    public void setCustomer(Customer customer) { this.customer = customer; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
     public Branch getBranch() { return branch; }
     public void setBranch(Branch branch) { this.branch = branch; }

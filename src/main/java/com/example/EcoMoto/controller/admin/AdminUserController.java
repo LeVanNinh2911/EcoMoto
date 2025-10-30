@@ -7,11 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 @RestController
 @RequestMapping("/api/admin/users")
 public class AdminUserController {
-
     @Autowired
     private AdminUserService adminUserService;
 
@@ -25,15 +23,16 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.getUserById(id));
     }
 
-    @PutMapping("/{id}/role")
-    public ResponseEntity<User> updateUserRole(@PathVariable Long id, @RequestParam String role) {
-        return ResponseEntity.ok(adminUserService.updateUserRole(id, role));
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+        User updated = adminUserService.updateUser(id, user);
+        return ResponseEntity.ok(updated);
     }
-
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         adminUserService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
 }
+
 

@@ -29,6 +29,7 @@ public class Product {
     @JsonIgnoreProperties("product")
     private List<ProductColor> colors;
 
+
     @Column(precision = 15, scale = 2)
     private BigDecimal price;
 

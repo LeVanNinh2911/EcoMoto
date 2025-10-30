@@ -1,10 +1,15 @@
 package com.example.EcoMoto.controller;
 
+import com.example.EcoMoto.dto.exchange.ExchangeRequestDto;
 import com.example.EcoMoto.dto.order.*;
 import com.example.EcoMoto.service.service.OrderService;
+import com.example.EcoMoto.util.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,19 +23,17 @@ public class OrderController {
     // ======================================================
     // 🧑‍💻 Đặt hàng cho người dùng đã đăng nhập
     // ======================================================
-    @PostMapping("/user/{userId}")
-    public ResponseEntity<OrderResponseDto> placeOrder(
-            @PathVariable Long userId,
-            @RequestBody OrderRequestDto request
-    ) {
-        try {
-            OrderResponseDto response = orderService.placeOrder(userId, request);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    new OrderResponseDto(null, null, null, "FAILED", null, null)
-            );
+    @PostMapping("/user")
+    public ResponseEntity<OrderResponseDto> placeOrder( @RequestHeader("Authorization") String token,
+                                                        @RequestBody OrderRequestDto request) {
+        // Lấy thông tin user từ token
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
         }
+        // Gọi service để đặt hàng
+        OrderResponseDto response = orderService.placeOrder(token,request);
+
+        return ResponseEntity.ok(response);
     }
 
     // ======================================================
@@ -45,7 +48,7 @@ public class OrderController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                    new OrderResponseDto(null, null, null, "FAILED", null, null)
+                    new OrderResponseDto(null, null, null, "FAILED", null, null,null,null)
             );
         }
     }

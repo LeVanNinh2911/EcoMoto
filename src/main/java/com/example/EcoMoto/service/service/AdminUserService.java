@@ -8,6 +8,6 @@ import java.util.List;
 public interface AdminUserService {
     List<User> getAllUsers();
     User getUserById(Long id);
-    User updateUserRole(Long id, String role);
+    User updateUser(Long id, User updatedUser);
     void deleteUser(Long id);
 }

@@ -1,7 +1,12 @@
 package com.example.EcoMoto.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
+import java.util.List;
+
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "customers")
 public class Customer {
@@ -26,8 +31,11 @@ public class Customer {
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = true)
     private User user;
 
-    public Customer() {
-    }
+    @JsonManagedReference // kết nối với @JsonBackReference trong Order
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Order> orders;
+
+    public Customer() {}
 
     public Customer(Long id, String name, String email, String phone, String address, User user) {
         this.id = id;

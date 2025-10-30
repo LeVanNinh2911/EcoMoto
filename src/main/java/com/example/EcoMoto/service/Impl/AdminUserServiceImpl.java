@@ -1,6 +1,6 @@
 package com.example.EcoMoto.service.Impl;
 
-import com.example.EcoMoto.entity.Role;
+import com.example.EcoMoto.config.SecurityConfig;
 import com.example.EcoMoto.entity.User;
 import com.example.EcoMoto.repository.RoleRepository;
 import com.example.EcoMoto.repository.UserRepository;
@@ -17,6 +17,8 @@ public class AdminUserServiceImpl implements AdminUserService {
     private UserRepository userRepository;
     @Autowired
     private RoleRepository roleRepository;
+    @Autowired
+    SecurityConfig securityConfig;
 
     @Override
     public List<User> getAllUsers() {
@@ -30,13 +32,32 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     @Override
-    public User updateUserRole(Long id, String role) {
-        User user = getUserById(id);
-        Role userRole = roleRepository.findByName(role)
-                .orElseThrow(() -> new IllegalStateException("Không tìm thấy quyền USER trong hệ thống"));
-        user.setRole(userRole);
-        return userRepository.save(user);
+    public User updateUser(Long id, User updatedUser) {
+        // 1️⃣ Tìm user hiện có theo ID
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        // 2️⃣ Cập nhật các thông tin cần thiết
+        if (updatedUser.getUsername() != null) {
+            existingUser.setUsername(updatedUser.getUsername());
+        }
+        if (updatedUser.getEmail() != null) {
+            existingUser.setEmail(updatedUser.getEmail());
+        }
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            existingUser.setPassword(securityConfig.passwordEncoder().encode(updatedUser.getPassword()));
+        }
+        if (updatedUser.getRole() != null) {
+            existingUser.setRole(updatedUser.getRole());
+        }
+        if (updatedUser.getStatus() != null) {
+            existingUser.setStatus(updatedUser.getStatus());
+        }
+
+        // 3️⃣ Lưu lại vào DB
+        return userRepository.save(existingUser);
     }
+
 
     @Override
     public void deleteUser(Long id) {

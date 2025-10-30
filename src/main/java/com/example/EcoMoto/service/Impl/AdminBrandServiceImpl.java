@@ -30,6 +30,8 @@ public class AdminBrandServiceImpl implements AdminBrandService {
     public Brand createBrand(AdminBrandDto dto) {
         Brand brand = new Brand();
         brand.setName(dto.getName());
+        brand.setCountry(dto.getCountry());
+        brand.setDescription(dto.getDescription());
         return brandRepository.save(brand);
     }
 
@@ -37,6 +39,8 @@ public class AdminBrandServiceImpl implements AdminBrandService {
     public Brand updateBrand(Long id, AdminBrandDto dto) {
         Brand brand = getBrandById(id);
         brand.setName(dto.getName());
+        brand.setCountry(dto.getCountry());
+        brand.setDescription(dto.getDescription());
         return brandRepository.save(brand);
     }
 
