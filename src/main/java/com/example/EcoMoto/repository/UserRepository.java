@@ -2,6 +2,7 @@ package com.example.EcoMoto.repository;
 
 
 import com.example.EcoMoto.entity.User;
+import com.example.EcoMoto.entity.enums.Status;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -28,9 +29,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findAllByRole_Name(String roleName);
 
     // Lấy danh sách user theo trạng thái (ACTIVE / INACTIVE)
-    List<User> findAllByStatus(User.Status status);
+    List<User> findAllByStatus(Status status);
 
     // Tìm user theo id và trạng thái (thường dùng để đảm bảo account đang active)
-    Optional<User> findByIdAndStatus(Long id, User.Status status);
+    Optional<User> findByIdAndStatus(Long id, Status status);
 }
 

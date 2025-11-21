@@ -2,6 +2,7 @@ package com.example.EcoMoto.service.Impl;
 
 import com.example.EcoMoto.config.SecurityConfig;
 import com.example.EcoMoto.entity.User;
+import com.example.EcoMoto.entity.enums.Status;
 import com.example.EcoMoto.repository.RoleRepository;
 import com.example.EcoMoto.repository.UserRepository;
 import com.example.EcoMoto.service.service.AdminUserService;
@@ -56,6 +57,32 @@ public class AdminUserServiceImpl implements AdminUserService {
 
         // 3️⃣ Lưu lại vào DB
         return userRepository.save(existingUser);
+    }
+    @Override
+    public User createUser(User user) {
+        // 1️⃣ Kiểm tra trùng username hoặc email
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        // 2️⃣ Mã hoá mật khẩu
+        user.setPassword(securityConfig.passwordEncoder().encode(user.getPassword()));
+
+        // 3️⃣ Thiết lập role mặc định nếu chưa có
+        if (user.getRole() == null) {
+            user.setRole(roleRepository.findByName("ROLE_USER")
+                    .orElseThrow(() -> new RuntimeException("Default role not found")));
+        }
+
+        // 4️⃣ Thiết lập trạng thái mặc định (nếu có cột status)
+        if (user.getStatus() == null) {
+            user.setStatus(Status.ACTIVE);
+        }
+        // 5️⃣ Lưu user vào DB
+        return userRepository.save(user);
     }
 
 

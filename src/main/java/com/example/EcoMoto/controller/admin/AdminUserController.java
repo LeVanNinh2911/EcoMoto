@@ -22,7 +22,10 @@ public class AdminUserController {
     public ResponseEntity<User> getUser(@PathVariable Long id) {
         return ResponseEntity.ok(adminUserService.getUserById(id));
     }
-
+    @PostMapping
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        return ResponseEntity.ok(adminUserService.createUser(user));
+    }
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
         User updated = adminUserService.updateUser(id, user);

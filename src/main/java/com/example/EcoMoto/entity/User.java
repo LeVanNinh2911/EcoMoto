@@ -1,5 +1,6 @@
 package com.example.EcoMoto.entity;
 
+import com.example.EcoMoto.entity.enums.Status;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -115,8 +116,4 @@ public class User {
         return updatedAt;
     }
 
-    public enum Status {
-        ACTIVE,
-        INACTIVE
-    }
 }
